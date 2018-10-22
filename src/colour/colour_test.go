@@ -1,11 +1,12 @@
 package colour
 
 import (
+	"math"
 	"testing"
 )
 
 var (
-	histosketch = []uint64{12345, 23456, 34567, 45678, 56789}
+	histosketch = []uint32{12345, 23456, 34567, 45678, 567895678, 0, math.MaxUint32}
 	hex0 = "#003039"
 )
 
@@ -14,19 +15,23 @@ func TestColourHistosketch(t *testing.T) {
 	for i, colour := range rgb {
 		t.Log(i, colour)
 	}
+	// the 6th colour sketch should be set to 0s (black)
+	if rgb[5].printRGBA() != "rgba(0,0,0,0)" {
+		t.Fatal("failed to colorsketch")
+	}
+	// the 7th colour sketch should be set to 255s (white)
+	if rgb[6].printRGBA() != "rgba(255,255,255,255)" {
+		t.Fatal("failed to colorsketch")
+	}
 }
 
-func TestPrints(t *testing.T) {
+func TestPrint(t *testing.T) {
 	// check an uninitialised rgb stuct
-	emptyColour := &rgb{}
+	emptyColour := &rgba{}
 	if err := emptyColour.checker(); err == nil {
 		t.Fatal("shouldn't print a hex as there is no rgb values stored")
 	}
 	rgb := ColourHistosketch(histosketch)
-	// check the individual prints
-	hexString := rgb[0].printHex()
-	rgbString := rgb[0].printRGB()
-	t.Log(hexString, rgbString)
 	// check the rgb and hex csv line
 	hexLine, err := rgb.Print(true)
 	if err != nil {
@@ -36,11 +41,6 @@ func TestPrints(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	t.Log(hexLine, rgbLine)
-	// TODO: check the colours actual match and make sense!
-
-
-	
-
-
+	t.Log(hexLine)
+	t.Log(rgbLine)
 }

@@ -1,3 +1,4 @@
+//
 package colour
 
 import (
@@ -11,7 +12,7 @@ const (
 )
 
 // colourSketch is a struct to hold a colour encoded sketch
-type colourSketch []*rgb
+type colourSketch []*rgba
 
 // Print is a method to print the coloured histoSketch as a csv line (either in rgb or hex)
 func (colourSketch *colourSketch) Print(hex bool) (string, error) {
@@ -22,64 +23,67 @@ func (colourSketch *colourSketch) Print(hex bool) (string, error) {
 			return "", err
 		}
 		if hex {
-			line += value.printHex() + ","
+			line += value.hex + ","
 		} else {
-			line += value.printRGB() + ","
+			line += value.printRGBA() + ","
 		}
 	}
 	return line, nil
 }
 
 // rgb is a struct to hold the colour information for one histosketch element
-type rgb struct {
+type rgba struct {
 	r uint8
 	g uint8
 	b uint8
 	a uint8
+	hex string
 }
 
 // checker is a method to check the rgb can be used
-func (rgb *rgb) checker() error {
-	if (rgb.r + rgb.g + rgb.b) == 0 {
+func (rgba *rgba) checker() error {
+	if rgba.hex == "" {
 		return errors.New("this is an uninitialised rgb")
 	}
 	return nil
 }
 
-// printRGB is a method to convert an rbg struct to a string
-func (rgb *rgb) printRGB() string {
-	return fmt.Sprintf("rgb(%d,%d,%d)", rgb.r, rgb.g, rgb.b)
+// printRGB is a method to convert an rbga struct to a rgba string
+func (rgba *rgba) printRGBA() string {
+	return fmt.Sprintf("rgba(%d,%d,%d,%d)", rgba.r, rgba.g, rgba.b, rgba.a)
 }
 
-// printHex is a method to convert an rgb struct into a hex string
-func (rgb *rgb) printHex() string {
-	return fmt.Sprintf("#%02X%02X%02X", rgb.r, rgb.g, rgb.b)
+// printHex is a method to convert an rgba struct to a hex string
+func (rgba *rgba) printHex() string {
+	return fmt.Sprintf("#%02X%02X%02X%02X", rgba.r, rgba.g, rgba.b, rgba.a)
 }
 
 // ColourHistosketch is is the colourSketch constructor
-func ColourHistosketch(histoSketch []uint64) colourSketch {
+func ColourHistosketch(histoSketch []uint32) colourSketch {
 	// prepare the coloured histosketch
 	colours := make(colourSketch, len(histoSketch))
 	// iterate over the values in the histosketch
 	for i := 0; i < len(histoSketch); i++ {
-		colours[i] = getRGB(histoSketch[i])
+		colours[i] = getRGBA(histoSketch[i])
 	}
 	return colours
 }
 
-// getRGB is a helper function to convert an int64 to an RGB colour
-func getRGB(element uint64) *rgb {
-	return &rgb{
-		r: uint8((element & 0xFF0000) >> 16),
-		g: uint8((element & 0x00FF00) >> 8),
-		b: uint8((element & 0x0000FF)),
-		//TODO: could add option to use the histosketches weights to adjust the alpha?
-		a: ALPHA,
+// getRGBA is a helper function to convert a uint32 to an RGBA colour
+func getRGBA(element uint32) *rgba {
+	colourSketch := &rgba{
+		r: uint8(0xFF & (element >> 24)),
+		g: uint8(0xFF & (element >> 16)),
+		b: uint8(0xFF & (element >> 8)),
+		// store the least significant bits as the alpha value
+		a: uint8(0xFF & element),
 	}
+	colourSketch.hex = colourSketch.printHex()
+	return colourSketch
 }
 
-// hex2rgb is a helper function to convert a hex string back to an RGB struct
-func hex2rgb(h string) (*rgb, error) {
+// hex2rgba is a helper function to convert a hex string back to an rgba struct
+func hex2rgba(h string) (*rgba, error) {
 	trimmedH := h
 	if trimmedH[0] == '#' {
 		trimmedH = h[1:]
@@ -99,9 +103,14 @@ func hex2rgb(h string) (*rgb, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &rgb{
+	decodedA, err := hex.DecodeString(trimmedH[6:8])
+	if err != nil {
+		return nil, err
+	}	
+	return &rgba{
 		r: uint8(decodedR[0]),
 		g: uint8(decodedG[0]),
 		b: uint8(decodedB[0]),
+		a: uint8(decodedA[0]),
 	}, nil
 }
