@@ -17,9 +17,9 @@ import (
 
 // the command line arguments
 var (
-	sketchDir    *string // the directory containing the sketches
-	recursive    *bool   // recursively search the supplied directory
-	storeCSV     *bool   // also write the colour sketches to a plain text csv file
+	sketchDir *string // the directory containing the sketches
+	recursive *bool   // recursively search the supplied directory
+	storeCSV  *bool   // also write the colour sketches to a plain text csv file
 )
 
 // the sketches

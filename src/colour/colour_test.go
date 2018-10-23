@@ -1,14 +1,14 @@
 package colour
 
 import (
-	"os"
 	"math"
+	"os"
 	"testing"
 )
 
 var (
 	sketch = []uint32{12345, 23456, 34567, 45678, 567895678, 0, math.MaxUint32}
-	hex0 = "#00003039"
+	hex0   = "#00003039"
 )
 
 func TestColourSketch(t *testing.T) {
@@ -63,12 +63,12 @@ func Test_ColourSketchStoreDump(t *testing.T) {
 	css["coloursketchA"] = cs
 	// dump
 	if err := css.Dump("./css.thor"); err != nil {
-        t.Fatal(err)
+		t.Fatal(err)
 	}
 	// load
-    css2 := make(ColourSketchStore)
-    if err := css2.Load("./css.thor"); err != nil {
-        t.Fatal(err)
+	css2 := make(ColourSketchStore)
+	if err := css2.Load("./css.thor"); err != nil {
+		t.Fatal(err)
 	}
 	// check the dump/load worked
 	for key, val := range css2 {
@@ -81,7 +81,7 @@ func Test_ColourSketchStoreDump(t *testing.T) {
 		t.Log(rgbLine)
 	}
 	// rm file
-    if err := os.Remove("./css.thor"); err != nil {
-        t.Fatal(err)
-    }
+	if err := os.Remove("./css.thor"); err != nil {
+		t.Fatal(err)
+	}
 }

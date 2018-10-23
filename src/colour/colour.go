@@ -1,12 +1,13 @@
-//
+// colour contains the types/methods/functions to encode sketches as rgba values
+
 package colour
 
 import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"gopkg.in/vmihailenco/msgpack.v2"
+	"io/ioutil"
 )
 
 // colourSketchStore is a struct to hold and query a set of coloured sketches
@@ -56,10 +57,10 @@ func (colourSketch *colourSketch) Print(printHex bool) (string, error) {
 
 // rgb is a struct to hold the colour information for one sketch element
 type rgba struct {
-	R uint8
-	G uint8
-	B uint8
-	A uint8
+	R   uint8
+	G   uint8
+	B   uint8
+	A   uint8
 	Hex string
 }
 
@@ -129,7 +130,7 @@ func hex2rgba(h string) (*rgba, error) {
 	decodedA, err := hex.DecodeString(trimmedH[6:8])
 	if err != nil {
 		return nil, err
-	}	
+	}
 	return &rgba{
 		R: uint8(decodedR[0]),
 		G: uint8(decodedG[0]),

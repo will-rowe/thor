@@ -21,14 +21,14 @@ import (
 
 // the command line arguments
 var (
-	fasta      *string //	FASTA file(s) to sketch, will perform a glob using the given string
-	inputSeqs	[]string	// the input files are put in this slice once the --fasta CL option is parsed
-	sketchAlgo	*string	// the sketching algorithm to use (histosketch or minhash)
-	sizeMB     *uint     // maximum memory (MB) used by each CMS to store counts
-	kSize      *int      // size of k-mer
-	minCount   *int      // minimum count number for a kmer to be added to the histosketch from this interval
-	sketchSize *uint     // size of sketch
-	chunkSize  *int      // splits the FASTA entry to equally sized chunks (if FASTA length not exactly divisible by chunkSize, last chunk will be smaller)
+	fasta      *string  //	FASTA file(s) to sketch, will perform a glob using the given string
+	inputSeqs  []string // the input files are put in this slice once the --fasta CL option is parsed
+	sketchAlgo *string  // the sketching algorithm to use (histosketch or minhash)
+	sizeMB     *uint    // maximum memory (MB) used by each CMS to store counts
+	kSize      *int     // size of k-mer
+	minCount   *int     // minimum count number for a kmer to be added to the histosketch from this interval
+	sketchSize *uint    // size of sketch
+	chunkSize  *int     // splits the FASTA entry to equally sized chunks (if FASTA length not exactly divisible by chunkSize, last chunk will be smaller)
 )
 
 // the sketchCmd

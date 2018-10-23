@@ -3,10 +3,10 @@
 package cmd
 
 import (
-	"path/filepath"
 	"fmt"
 	"github.com/spf13/cobra"
 	"os"
+	"path/filepath"
 	"runtime"
 	"time"
 )
