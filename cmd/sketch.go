@@ -23,6 +23,7 @@ import (
 var (
 	fasta      *string //	FASTA file(s) to sketch, will perform a glob using the given string
 	inputSeqs	[]string	// the input files are put in this slice once the --fasta CL option is parsed
+	sketchAlgo	*string	// the sketching algorithm to use (histosketch or minhash)
 	sizeMB     *uint     // maximum memory (MB) used by each CMS to store counts
 	kSize      *int      // size of k-mer
 	minCount   *int      // minimum count number for a kmer to be added to the histosketch from this interval
@@ -51,6 +52,7 @@ to quickly create a Cobra application.`,
 // a function to initialise the command line arguments
 func init() {
 	fasta = sketchCmd.Flags().StringP("fasta", "f", "", "FASTA file(s) to sketch (can also pipe STDIN)")
+	sketchAlgo = sketchCmd.Flags().StringP("sketchAlgo", "a", "histosketch", "the sketching algorithm to use (histosketch or minhash)")
 	sizeMB = sketchCmd.Flags().UintP("cmsMem", "c", 1, "maximum memory (MB) used by each CMS to store counts")
 	kSize = sketchCmd.Flags().IntP("kmerSize", "k", 7, "size of k-mer")
 	minCount = sketchCmd.Flags().IntP("minCount", "m", 1, "minimum k-mer count for it to be histosketched for a given interval")
@@ -62,6 +64,16 @@ func init() {
 
 //  a function to check user supplied parameters
 func sketchParamCheck() error {
+	// check the algorithm is minhash or histosketch
+	switch *sketchAlgo {
+	case "histosketch":
+		log.Printf("\tsketching algorithm: histosketch")
+	case "minhash":
+		log.Printf("\tsketching algorithm: minhash")
+	default:
+		fmt.Println("--sketchAlgo must be either histosketch or minhash")
+		return fmt.Errorf("--sketchAlgo must be either histosketch or minhash")
+	}
 	// check if using STDIN or file(s)
 	if *fasta == "" {
 		stat, err := os.Stdin.Stat()
@@ -194,8 +206,5 @@ func runSketch() {
 		}(inputSeqs[i])
 	}
 	wg.Wait()
-
-
-
 	log.Printf("finished")
 }
