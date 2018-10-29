@@ -1,0 +1,7 @@
+# QIIME v1.3.0-dev OTU table
+#OTU ID	700114607	Consensus Lineage
+OTU_01.1	0	Root;p__Firmicutes;c__Bacilli;o__Lactobacillales;f__Streptococcaceae;g__Streptococcus
+OTU_01.2	10	Root;p__Bacteroidetes;c__Bacteroidia;o__Bacteroidales;f__Bacteroidaceae;g__Bacteroides
+OTU_01.3	100	Root;p__Proteobacteria;c__Betaproteobacteria;o__Neisseriales;f__Neisseriaceae;g__Simonsiella
+OTU_01.4	1000	Root;p__Actinobacteria;c__Actinobacteria;o__Actinomycetales;f__Propionibacteriaceae;g__Propionibacterium
+OTU_01.5	10000	Root;p__Actinobacteria;c__Actinobacteria;o__Actinomycetales;f__Propionibacteriaceae

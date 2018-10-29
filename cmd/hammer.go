@@ -7,18 +7,24 @@ import (
 	"log"
 	"os"
 
-	"github.com/spf13/cobra"
 	"github.com/pkg/profile"
+	"github.com/spf13/cobra"
 	"github.com/will-rowe/hulk/src/misc"
 	"github.com/will-rowe/thor/src/colour"
+	//"github.com/will-rowe/thor/src/draw"
+	"github.com/will-rowe/thor/src/hammer"
 	"github.com/will-rowe/thor/src/version"
 )
+
+// the currently supported otu table formats
+var supportedFormats [1]string = [1]string{"qiime"}
 
 // the command line arguments
 var (
 	otuTables      *[]string // the input OTU tables
+	format	*string	// the otuTable format
 	colourSketches *string   // the reference colour sketches
-	alphaAbundance	*bool	// replace the alpha channel of the colour sketch with the OTU abundance
+	alphaAbundance *bool     // replace the alpha channel of the colour sketch with the OTU abundance
 	storePng       *bool     // also store the image as a png
 )
 
@@ -42,17 +48,29 @@ to quickly create a Cobra application.`,
 
 // a function to initialise the command line arguments
 func init() {
-	otuTables = hammerCmd.Flags().StringSliceP("otuTables", "i", []string{}, "input OTU tables to transform to hashed OTU rgb images")
+	otuTables = hammerCmd.Flags().StringSliceP("otuTables", "i", []string{}, "input OTU table(s) to transform to hashed OTU RGBA images")
+	format = hammerCmd.Flags().StringP("otuFormat", "f", "qiime", "the format of the input OTU table(s) (only QIIME currently supported")
 	colourSketches = hammerCmd.Flags().StringP("colourSketches", "c", "", "the set of reference colour sketches (from `thor colour`)")
 	alphaAbundance = hammerCmd.Flags().Bool("alphaAbundance", false, "include the OTU abundance (replaces existing alpha value of colour sketches")
 	storePng = hammerCmd.Flags().Bool("png", false, "also store the image as a png file")
 	hammerCmd.MarkFlagRequired("otuTables")
 	hammerCmd.MarkFlagRequired("colourSketches")
+	hammerCmd.Flags().SortFlags = false
 	RootCmd.AddCommand(hammerCmd)
 }
 
 // check the program input
 func checkInput() error {
+	// check specified format is supported
+	var check bool
+	for _, sf := range supportedFormats {
+		if sf == *format {
+			check = true
+		}
+	}
+	if check == false {
+		return fmt.Errorf("OTU table format not supported: %v", *format)
+	}
 	// check the OTU tables
 	for _, otuTable := range *otuTables {
 		if _, err := os.Stat(otuTable); err != nil {
@@ -63,6 +81,8 @@ func checkInput() error {
 			}
 		}
 		// TODO: check the supplied file is actually an OTU table
+
+		// TODO: check that the supplied file is in the specified format
 
 	}
 	// check the colour sketch file
@@ -97,42 +117,44 @@ func runHammer() {
 	// check the supplied files and then log some stuff
 	log.Printf("checking parameters...")
 	misc.ErrorCheck(checkInput())
-	log.Printf("\tinput files:")
+	log.Printf("\tinput OTU tables:")
 	for _, file := range *otuTables {
 		log.Printf("\t\t%v", file)
 	}
-	log.Printf("\tcolour sketches:")
-	log.Printf("\t\t%v", *colourSketches)
+	log.Printf("\tOTU table format: %v", *format)
 	log.Printf("\toutput file basename: %v", *outFile)
 	log.Printf("\tinclude OTU abundance: %t", *alphaAbundance)
 	log.Printf("\tstore PNG: %t", *storePng)
+	log.Printf("\tcolour sketches: %v", *colourSketches)
 	// load the reference colour sketches
 	css := make(colour.ColourSketchStore)
 	misc.ErrorCheck(css.Load(*colourSketches))
+	log.Printf("\tsketch length: %d", css.GetSketchLength())
 	// process each OTU table
+	log.Printf("processing OTU table(s)...")
+	// TODO: should I make this run concurrently?
 	for i, otuTable := range *otuTables {
-		fmt.Println(i, otuTable)
-
-		// set up the hammer object
+		// read the OTU table
+		table, err := hammer.NewOTUtable(otuTable, *format)
+		misc.ErrorCheck(err)
+		log.Printf("\ttable %d: %v", (i+1), otuTable)
+		log.Printf("\tnum. samples: %d", table.GetNumSamples())
+		log.Printf("\tnum. OTU ids at genus level: %d", table.GetTotalGenusOTUs())
 
 
 		// parse each OTU and grab the corresponding colour sketch
 
-
 		// if we are overwriting the alpha channel, replace this now with the OTU abundance
 
-
 		// add the colour sketch to the hammer object
-
 
 		// start hammering
 		// only keep top X most abundant OTUs, where X = len(colour sketch), giving us a square image
 
 		// send the final image on
-		
 
 	}
 
-
 	// save all images (and PNGs if requested)
+
 }

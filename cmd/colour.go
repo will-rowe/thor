@@ -8,6 +8,7 @@ import (
 	"math"
 	"os"
 	"sort"
+	"sync"
 
 	"github.com/spf13/cobra"
 	"github.com/will-rowe/hulk/src/histosketch"
@@ -48,6 +49,7 @@ func init() {
 	sketchDir = colourCmd.Flags().StringP("sketchDir", "d", "./", "the directory containing the sketches to smash (compare)...")
 	recursive = colourCmd.Flags().Bool("recursive", false, "recursively search the supplied sketch directory (-d)")
 	storeCSV = colourCmd.Flags().Bool("storeCSV", false, "also write the colour sketches (as hex) to a plain text csv file")
+	colourCmd.Flags().SortFlags = false
 	RootCmd.AddCommand(colourCmd)
 }
 
@@ -72,27 +74,50 @@ func makeColourSketches() error {
 		count++
 	}
 	sort.Strings(ordering)
+	var wg sync.WaitGroup
+	csc := colour.NewColourSketchChan()
 	// set up colour sketch store
 	css := make(colour.ColourSketchStore)
 	// colour the sketches
 	for _, id := range ordering {
-		// get the sketch values
-		sketch := hSketches[id].Sketch
-		// check the sketch values fit into a uint32
-		values := make([]uint32, len(sketch))
-		for i := 0; i < len(sketch); i++ {
-			if sketch[i] > math.MaxUint32 {
-				return fmt.Errorf("sketch element overflows uint32: %d", sketch[i])
+		wg.Add(1)
+		// get the sketch values and launch go routines
+		go func(sketch []uint, id string) {
+			defer wg.Done()
+			// convert sketch values to uint32, send error if they overflow
+			values := make([]uint32, len(sketch))
+			var err bool
+			for i := 0; i < len(sketch); i++ {
+				if sketch[i] > math.MaxUint32 {
+					err = true
+					break
+				}
+				values[i] = uint32(sketch[i])
 			}
-			values[i] = uint32(sketch[i])
-		}
-		// colour the sketch values
-		coloursketch := colour.NewColourSketch(values)
+			// if the sketch fits, colour and send it
+			if !err {
+				csc.Send(colour.NewColourSketch(values, id), nil)
+			} else {
+				csc.Send(nil, fmt.Errorf("sketch contains element that overflows uint32: %v", id))
+			}
+
+		}(hSketches[id].Sketch, id)
+	}
+	go func() {
+		wg.Wait()
+		close(csc)
+	}()
+
+	// collect the coloursketches
+	for parcel := range csc {
+		// check for errors
+		coloursketch, err := parcel.Unpack()
+		misc.ErrorCheck(err)
 		// add this coloursketch to the store
-		if _, ok := css[id]; !ok {
-			css[id] = coloursketch
+		if _, ok := css[coloursketch.Id]; !ok {
+			css[coloursketch.Id] = coloursketch
 		} else {
-			return fmt.Errorf("duplicate sketch name found: %v", id)
+			return fmt.Errorf("duplicate sketch name found: %v", coloursketch.Id)
 		}
 		// write this colour sketch (in hex) to the csv
 		if *storeCSV {
@@ -100,7 +125,7 @@ func makeColourSketches() error {
 			if err != nil {
 				return err
 			}
-			if err := csvWriter.Write([]string{id, colours}); err != nil {
+			if err := csvWriter.Write([]string{coloursketch.Id, colours}); err != nil {
 				return err
 			}
 		}

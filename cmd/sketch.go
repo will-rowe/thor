@@ -24,11 +24,11 @@ var (
 	fasta      *string  //	FASTA file(s) to sketch, will perform a glob using the given string
 	inputSeqs  []string // the input files are put in this slice once the --fasta CL option is parsed
 	sketchAlgo *string  // the sketching algorithm to use (histosketch or minhash)
-	sizeMB     *uint    // maximum memory (MB) used by each CMS to store counts
 	kSize      *int     // size of k-mer
+	epsilon    *float64  // epsilon value for countminsketch generation
+	delta      *float64  // delta value for countminsketch generation
 	minCount   *int     // minimum count number for a kmer to be added to the histosketch from this interval
 	sketchSize *uint    // size of sketch
-	chunkSize  *int     // splits the FASTA entry to equally sized chunks (if FASTA length not exactly divisible by chunkSize, last chunk will be smaller)
 )
 
 // the sketchCmd
@@ -53,11 +53,11 @@ to quickly create a Cobra application.`,
 func init() {
 	fasta = sketchCmd.Flags().StringP("fasta", "f", "", "FASTA file(s) to sketch (can also pipe STDIN)")
 	sketchAlgo = sketchCmd.Flags().StringP("sketchAlgo", "a", "histosketch", "the sketching algorithm to use (histosketch or minhash)")
-	sizeMB = sketchCmd.Flags().UintP("cmsMem", "c", 1, "maximum memory (MB) used by each CMS to store counts")
-	kSize = sketchCmd.Flags().IntP("kmerSize", "k", 7, "size of k-mer")
+	kSize = sketchCmd.Flags().IntP("kmerSize", "k", 21, "size of k-mer")
+	epsilon = sketchCmd.Flags().Float64P("epsilon", "e", 0.00001, "epsilon value for countminsketch generation")
+	delta = sketchCmd.Flags().Float64P("delta", "d", 0.90, "delta value for countminsketch generation")
 	minCount = sketchCmd.Flags().IntP("minCount", "m", 1, "minimum k-mer count for it to be histosketched for a given interval")
-	sketchSize = sketchCmd.Flags().UintP("sketchSize", "s", 1000, "size of sketch")
-	chunkSize = sketchCmd.Flags().IntP("chunkSize", "z", -1, "the chunk size for shredding FASTA sequences (requires --fasta) (use -1 to deactivate)")
+	sketchSize = sketchCmd.Flags().UintP("sketchSize", "s", 100, "size of sketch")
 	sketchCmd.Flags().SortFlags = false
 	RootCmd.AddCommand(sketchCmd)
 }
@@ -153,16 +153,14 @@ func runSketch() {
 		log.Printf("\t\t%v", file)
 	}
 	log.Printf("\toutput file basename: %v", *outFile)
-	log.Printf("\tchunk size: %d", *chunkSize)
 	log.Printf("\tno. processors: %d", *proc)
 	log.Printf("\tk-mer size: %d", *kSize)
 	log.Printf("\tmin. k-mer count: %d", *minCount)
-	log.Printf("\tCMS memory: %d MB", *sizeMB)
 	log.Printf("\tsketch size: %d", *sketchSize)
 	// create the base countmin sketch for recording the k-mer spectrum
 	log.Printf("creating the base countmin sketch for kmer counting...")
 	// TODO: epsilon and delta values need some checking
-	spectrum := histosketch.NewCountMinSketch(*sizeMB, 1.0)
+	spectrum := histosketch.NewCountMinSketch(*epsilon, *delta, 1.0)
 	log.Printf("\tnumber of tables: %d", spectrum.Tables())
 	log.Printf("\tnumber of counters per table: %d", spectrum.Counters())
 	log.Printf("sketching %d files...", len(inputSeqs))
@@ -191,7 +189,7 @@ func runSketch() {
 			counter.Spectrum, sketcher.Spectrum = spectrum.Copy(), spectrum.Copy()
 			counter.NumCPU, sketcher.NumCPU = *proc, *proc
 			counter.SketchSize, sketcher.SketchSize = *sketchSize, *sketchSize
-			counter.ChunkSize = *chunkSize
+			counter.ChunkSize = -1
 			sketcher.MinCount = float64(*minCount)
 			sketcher.DecayRatio = 1.0
 			sketcher.OutFile = sketchFile
