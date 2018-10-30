@@ -165,13 +165,14 @@ func GetPadding(n int) []color.RGBA {
 }
 
 // getRGBA is a helper function to convert a uint32 to an RGBA colour
+// begin loading the RGBA from the most significant bit
 func getRGBA(element uint32) rgba {
 	colour := color.RGBA{
-		R: uint8(0xFF & (element >> 24)),
-		G: uint8(0xFF & (element >> 16)),
-		B: uint8(0xFF & (element >> 8)),
-		// store the least significant bits as the alpha value
-		A: uint8(0xFF & element),
+		R: uint8(0xFF & element),
+		G: uint8(0xFF & (element >> 8)),
+		B: uint8(0xFF & (element >> 16)),
+		//A: uint8(0xFF & (element >> 24)),
+		A: uint8(255),
 	}
 	rgba := rgba{
 		RGBA: colour,

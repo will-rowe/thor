@@ -53,7 +53,7 @@ func init() {
 	format = hammerCmd.Flags().StringP("otuFormat", "f", "qiime", "the format of the input OTU table(s) (only QIIME currently supported")
 	colourSketches = hammerCmd.Flags().StringP("colourSketches", "c", "", "the set of reference colour sketches (from `thor colour`)")
 	alphaAbundance = hammerCmd.Flags().Bool("alphaAbundance", false, "include the OTU abundance (replaces existing alpha value of colour sketches")
-	storeTHORcsv = hammerCmd.Flags().Bool("csv", false, "also store the image as a csv file of RGBA values")
+	storeTHORcsv = hammerCmd.Flags().Bool("storeCSV", false, "also store the image as a csv file of RGBA values")
 	hammerCmd.MarkFlagRequired("otuTables")
 	hammerCmd.MarkFlagRequired("colourSketches")
 	hammerCmd.Flags().SortFlags = false
@@ -142,10 +142,12 @@ func runHammer() {
 		log.Printf("\ttable %d: %v", (i + 1), otuTable)
 		log.Printf("\tnum. samples: %d", table.GetNumSamples())
 		log.Printf("\tnum. OTU ids at genus level: %d", table.GetTotalGenusOTUs())
+		// attach the colour sketch store
+		table.ColourSketchStore = css
 		// get the top N most abundant OTUs (and add padding if needed) for each sample
 		misc.ErrorCheck(table.KeepTopN(sketchLength))
 		// parse top OTUs, lookup the coloursketches and keep corresponding rgba slices for each sample
-		sampleRGBAs, err := table.ColourTopN(css)
+		sampleRGBAs, err := table.ColourTopN()
 		misc.ErrorCheck(err)
 		// process each sample, collecting the pixel vectors
 		for j, sampleRGBA := range sampleRGBAs {

@@ -123,7 +123,6 @@ func makeColourSketches() error {
 			coloursketch.Id = tmp2[len(tmp2)-1]
 		}
 		// add this coloursketch to the store
-		fmt.Println(coloursketch.Id)
 		if _, ok := css[coloursketch.Id]; !ok {
 			css[coloursketch.Id] = coloursketch
 		} else {

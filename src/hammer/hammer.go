@@ -34,6 +34,8 @@ type otuTable struct {
 	sampleData  []map[string]int
 	topN        [][]otu
 	totalOTUs   int
+	// the COLOURSKETCH map
+	ColourSketchStore colour.ColourSketchStore
 }
 
 // PrintComments returns the OTU table comments, formatted as a single string with newlines
@@ -87,7 +89,7 @@ func (otuTable *otuTable) KeepTopN(n int) error {
 
 // ColourTopN returns the corresponding coloursketches for the TopN otus
 // returns the sample ID, the slice of coloursketches and any error
-func (otuTable *otuTable) ColourTopN(css colour.ColourSketchStore) ([][][]color.RGBA, error) {
+func (otuTable *otuTable) ColourTopN() ([][][]color.RGBA, error) {
 	rgbaLines := make([][][]color.RGBA, otuTable.GetNumSamples())
 	// perform for each sample in the OTU table
 	for i := range otuTable.sampleNames {
@@ -99,12 +101,11 @@ func (otuTable *otuTable) ColourTopN(css colour.ColourSketchStore) ([][][]color.
 				continue
 			}
 			// lookup the otu in the css
-			if _, ok := css[otu.otu]; !ok {
-				// TODO: instead of error, offer a warning? Will put in padding for now
-				continue
-				//return nil, fmt.Errorf("sample %v: the genus name `%v` (abundance: %d) could not be found in the coloursketches", string(otuTable.sampleNames[i]), otu.otu, otu.abundance)
+			if _, ok := otuTable.ColourSketchStore[otu.otu]; !ok {
+				// TODO: we've already checked that the topN OTUs are present in the REFSEQ db, this error should never happen here
+				return nil, fmt.Errorf("sample %v: the genus name `%v` (abundance: %d) could not be found in the coloursketches", string(otuTable.sampleNames[i]), otu.otu, otu.abundance)
 			} else {
-				if rgba, err := css[otu.otu].PrintPNGline(); err != nil {
+				if rgba, err := otuTable.ColourSketchStore[otu.otu].PrintPNGline(); err != nil {
 					return nil, err
 				} else {
 					rgbaLines[i][j] = rgba
@@ -219,6 +220,11 @@ func sortOTUs(otuTable *otuTable, sampleID, n int, wg *sync.WaitGroup) {
 	var topNotus []otu
 	// put the otus into a slice
 	for k, v := range otuTable.sampleData[sampleID] {
+		// don't include OTUs that aren't in the REFSEQ database
+		// TODO: this is a bit cludgy, I'll make it better...
+		if _, ok := otuTable.ColourSketchStore[k]; !ok {
+			continue
+		}
 		topNotus = append(topNotus, otu{k, v})
 	}
 	// sort
