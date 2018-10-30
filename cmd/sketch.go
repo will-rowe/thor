@@ -25,8 +25,8 @@ var (
 	inputSeqs  []string // the input files are put in this slice once the --fasta CL option is parsed
 	sketchAlgo *string  // the sketching algorithm to use (histosketch or minhash)
 	kSize      *int     // size of k-mer
-	epsilon    *float64  // epsilon value for countminsketch generation
-	delta      *float64  // delta value for countminsketch generation
+	epsilon    *float64 // epsilon value for countminsketch generation
+	delta      *float64 // delta value for countminsketch generation
 	minCount   *int     // minimum count number for a kmer to be added to the histosketch from this interval
 	sketchSize *uint    // size of sketch
 )

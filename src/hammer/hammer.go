@@ -7,31 +7,34 @@ import (
 	"bytes"
 	"encoding/csv"
 	"fmt"
+	"image/color"
 	"io"
 	"os"
 	"sort"
 	"strconv"
 	"strings"
 	"sync"
+
+	"github.com/will-rowe/thor/src/colour"
 )
 
 // otu
 type otu struct {
-	otu   string
+	otu       string
 	abundance int
 }
 
 // otuTable
 type otuTable struct {
-	program	string
-	path string
-	comments	[][]byte
+	program  string
+	path     string
+	comments [][]byte
 	// the ordering of the outside slice of sampleNames, sampleData and topN are used to relate the data
 	sampleNames [][]byte
-	sampleData []map[string]int
-	topN [][]otu
-	totalOTUs	int
-}	
+	sampleData  []map[string]int
+	topN        [][]otu
+	totalOTUs   int
+}
 
 // PrintComments returns the OTU table comments, formatted as a single string with newlines
 func (otuTable *otuTable) PrintComments() string {
@@ -46,6 +49,14 @@ func (otuTable *otuTable) PrintComments() string {
 // GetNumSamples returns the number of samples found in the OTU table
 func (otuTable *otuTable) GetNumSamples() int {
 	return len(otuTable.sampleNames)
+}
+
+// GetSampleName returns the string formatted sample name, give the index position
+func (otuTable *otuTable) GetSampleName(i int) (string, error) {
+	if i > len(otuTable.sampleNames) {
+		return "", fmt.Errorf("sample index position > number of samples!")
+	}
+	return string(otuTable.sampleNames[i]), nil
 }
 
 // GetTotalGenusOTUs returns the total number of genus level OTUs in the original OTU table file
@@ -68,11 +79,40 @@ func (otuTable *otuTable) KeepTopN(n int) error {
 	var wg sync.WaitGroup
 	for i := 0; i < len(otuTable.sampleData); i++ {
 		wg.Add(1)
-		
 		go sortOTUs(otuTable, i, n, &wg)
 	}
 	wg.Wait()
 	return nil
+}
+
+// ColourTopN returns the corresponding coloursketches for the TopN otus
+// returns the sample ID, the slice of coloursketches and any error
+func (otuTable *otuTable) ColourTopN(css colour.ColourSketchStore) ([][][]color.RGBA, error) {
+	rgbaLines := make([][][]color.RGBA, otuTable.GetNumSamples())
+	// perform for each sample in the OTU table
+	for i := range otuTable.sampleNames {
+		rgbaLines[i] = make([][]color.RGBA, len(otuTable.topN[i]))
+		// for each sample, range over the topN otus
+		for j, otu := range otuTable.topN[i] {
+			// skip padding lines
+			if otu.otu == "padding" {
+				continue
+			}
+			// lookup the otu in the css
+			if _, ok := css[otu.otu]; !ok {
+				// TODO: instead of error, offer a warning? Will put in padding for now
+				continue
+				//return nil, fmt.Errorf("sample %v: the genus name `%v` (abundance: %d) could not be found in the coloursketches", string(otuTable.sampleNames[i]), otu.otu, otu.abundance)
+			} else {
+				if rgba, err := css[otu.otu].PrintPNGline(); err != nil {
+					return nil, err
+				} else {
+					rgbaLines[i][j] = rgba
+				}
+			}
+		}
+	}
+	return rgbaLines, nil
 }
 
 // readQiimeTable will load a qiime file into the otuTable
@@ -99,11 +139,11 @@ func (otuTable *otuTable) readQiimeTable() error {
 			// add the comment and keep peeking
 			if string(line[0:4]) != "#OTU" {
 				otuTable.comments = append(otuTable.comments, line)
-			// or finish the slurping, add the samples from the header and start reading lines
+				// or finish the slurping, add the samples from the header and start reading lines
 			} else {
 				samples := bytes.Split(line, []byte("	"))
 				numSamples := (len(samples) - 2)
-				samples = samples[1:1+numSamples]
+				samples = samples[1 : 1+numSamples]
 				otuTable.sampleNames = make([][]byte, numSamples)
 				otuTable.sampleData = make([]map[string]int, numSamples)
 				otuTable.topN = make([][]otu, numSamples)
@@ -132,6 +172,9 @@ func (otuTable *otuTable) readQiimeTable() error {
 		if len(consensusLineage) != 2 {
 			continue
 		}
+		if consensusLineage[1] == "" {
+			continue
+		}
 		// add the abundance values to the corresponding samples
 		for i := 1; i <= len(otuTable.sampleData); i++ {
 			value, err := strconv.Atoi(line[i])
@@ -153,7 +196,7 @@ func (otuTable *otuTable) readQiimeTable() error {
 // NewOTUtable is the otuTable constructor
 func NewOTUtable(path, prog string) (*otuTable, error) {
 	table := &otuTable{
-		path: path,
+		path:    path,
 		program: prog,
 	}
 	// read in the file
@@ -175,13 +218,13 @@ func sortOTUs(otuTable *otuTable, sampleID, n int, wg *sync.WaitGroup) {
 	defer wg.Done()
 	var topNotus []otu
 	// put the otus into a slice
-    for k, v := range otuTable.sampleData[sampleID] {
-        topNotus = append(topNotus, otu{k, v})
-    }
+	for k, v := range otuTable.sampleData[sampleID] {
+		topNotus = append(topNotus, otu{k, v})
+	}
 	// sort
-    sort.Slice(topNotus, func(i, j int) bool {
-        return topNotus[i].abundance > topNotus[j].abundance
-    })
+	sort.Slice(topNotus, func(i, j int) bool {
+		return topNotus[i].abundance > topNotus[j].abundance
+	})
 	// update the OTUtable with the top n otus
 	otuTable.topN[sampleID] = topNotus[0:n]
 	// remove the full map for this sample
@@ -194,7 +237,3 @@ func sortOTUs(otuTable *otuTable, sampleID, n int, wg *sync.WaitGroup) {
 	}
 	return
 }
-
-
-
-

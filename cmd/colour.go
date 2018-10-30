@@ -8,6 +8,7 @@ import (
 	"math"
 	"os"
 	"sort"
+	"strings"
 	"sync"
 
 	"github.com/spf13/cobra"
@@ -113,7 +114,16 @@ func makeColourSketches() error {
 		// check for errors
 		coloursketch, err := parcel.Unpack()
 		misc.ErrorCheck(err)
+		// clean up the id so that only the genus remains
+		tmp1 := strings.TrimSuffix(coloursketch.Id, ".sketch")
+		tmp2 := strings.Split(tmp1, "/")
+		if len(tmp2) == 1 {
+			coloursketch.Id = tmp2[0]
+		} else {
+			coloursketch.Id = tmp2[len(tmp2)-1]
+		}
 		// add this coloursketch to the store
+		fmt.Println(coloursketch.Id)
 		if _, ok := css[coloursketch.Id]; !ok {
 			css[coloursketch.Id] = coloursketch
 		} else {
@@ -121,7 +131,7 @@ func makeColourSketches() error {
 		}
 		// write this colour sketch (in hex) to the csv
 		if *storeCSV {
-			colours, err := coloursketch.Print(true)
+			colours, err := coloursketch.PrintCSVline(true)
 			if err != nil {
 				return err
 			}
