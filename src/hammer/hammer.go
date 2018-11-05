@@ -222,9 +222,9 @@ func sortOTUs(otuTable *otuTable, sampleID, n int, wg *sync.WaitGroup) {
 	for k, v := range otuTable.sampleData[sampleID] {
 		// don't include OTUs that aren't in the REFSEQ database
 		// TODO: this is a bit cludgy, I'll make it better...
-		if _, ok := otuTable.ColourSketchStore[k]; !ok {
-			continue
-		}
+		//if _, ok := otuTable.ColourSketchStore[k]; !ok {
+		//	continue
+		//}
 		topNotus = append(topNotus, otu{k, v})
 	}
 	// sort

@@ -46,21 +46,6 @@ func TestPrint(t *testing.T) {
 	t.Log(rgbLine)
 }
 
-func TestRGBA2Hex(t *testing.T) {
-	// check that the hex encoding works
-	cs := NewColourSketch(sketch, "coloursketchA")
-	if cs.Colours[0].Hex != hex0 {
-		t.Fatal("hex encoding failed")
-	}
-	//converted, err := Hex2rgba(cs.Colours[0].Hex)
-	//if err != nil {
-	//	t.Fatal(err)
-	//}
-	//if converted.printRGBA() != cs.Colours[0].printRGBA() {
-	//	t.Fatal("rgba converted hex does not match original rgba value")
-	//}
-}
-
 // test the lshEnsemble dump and load methods
 func Test_ColourSketchStoreDump(t *testing.T) {
 	// create the store
