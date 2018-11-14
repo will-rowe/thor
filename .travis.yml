@@ -1,0 +1,18 @@
+sudo: required
+dist: precise
+
+os:
+    - linux
+    - osx
+
+language: go
+go:
+ - 1.9
+
+install:
+ - go get -d -t -v ./...
+ - go test -v ./...
+ - go build -v -o ./thor
+
+script:
+ - ./thor version
