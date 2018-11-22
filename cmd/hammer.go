@@ -26,7 +26,7 @@ var (
 	format         *string   // the otuTable format
 	colourSketches *string   // the reference colour sketches
 	alphaAbundance *bool     // replace the alpha channel of the colour sketch with the OTU abundance
-	storeTHORcsv   *bool     // also store the image as a csv of RGBA values
+	padding        *bool     // pad out the image with white pixels if OTUs are absent
 )
 
 // hammerCmd represents the hammer command
@@ -53,7 +53,7 @@ func init() {
 	format = hammerCmd.Flags().StringP("otuFormat", "f", "qiime", "the format of the input OTU table(s) (only QIIME currently supported")
 	colourSketches = hammerCmd.Flags().StringP("colourSketches", "c", "", "the set of reference colour sketches (from `thor colour`)")
 	alphaAbundance = hammerCmd.Flags().Bool("alphaAbundance", false, "include the OTU abundance (replaces existing alpha value of colour sketches")
-	storeTHORcsv = hammerCmd.Flags().Bool("storeCSV", false, "also store the image as a csv file of RGBA values")
+	padding = hammerCmd.Flags().Bool("padding", false, "pad out images with rows of white pixels if OTUs are absent")
 	hammerCmd.MarkFlagRequired("otuTables")
 	hammerCmd.MarkFlagRequired("colourSketches")
 	hammerCmd.Flags().SortFlags = false
@@ -125,7 +125,7 @@ func runHammer() {
 	log.Printf("\tOTU table format: %v", *format)
 	log.Printf("\toutput file basename: %v", *outFile)
 	log.Printf("\tinclude OTU abundance: %t", *alphaAbundance)
-	log.Printf("\tstore CSV: %t", *storeTHORcsv)
+	log.Printf("\tpad PNG: %t", *padding)
 	log.Printf("\tcolour sketches: %v", *colourSketches)
 	// load the reference colour sketches
 	css := make(colour.ColourSketchStore)
@@ -142,12 +142,10 @@ func runHammer() {
 		log.Printf("\ttable %d: %v", (i + 1), otuTable)
 		log.Printf("\tnum. samples: %d", table.GetNumSamples())
 		log.Printf("\tnum. OTU ids at genus level: %d", table.GetTotalGenusOTUs())
-		// attach the colour sketch store
-		table.ColourSketchStore = css
-		// get the top N most abundant OTUs (and add padding if needed) for each sample
+		// get the top N most abundant OTUs for each sample
 		misc.ErrorCheck(table.KeepTopN(sketchLength))
-		// parse top OTUs, lookup the coloursketches and keep corresponding rgba slices for each sample
-		sampleRGBAs, err := table.ColourTopN()
+		// attach the colour sketch store, parse top OTUs, lookup the coloursketches and keep corresponding rgba slices for each sample
+		sampleRGBAs, err := table.ColourTopN(css, *padding)
 		misc.ErrorCheck(err)
 		// process each sample, collecting the pixel vectors
 		for j, sampleRGBA := range sampleRGBAs {
@@ -156,8 +154,14 @@ func runHammer() {
 			misc.ErrorCheck(err)
 			// collect the pixel vectors
 			for _, line := range sampleRGBA {
+				// if padding is not requested, skip this line
 				if line == nil {
-					line = colour.GetPadding(sketchLength)
+					if *padding == false {
+						continue
+					}
+					// TODO: if OTU not found in RefSeq, a nil line will be returned - need to handle this!
+					continue
+					//misc.ErrorCheck(fmt.Errorf("nil line found in coloured OTU table"))
 				}
 				err := img.DrawOTU(line)
 				misc.ErrorCheck(err)
@@ -166,7 +170,7 @@ func runHammer() {
 			sample, err := table.GetSampleName(j)
 			misc.ErrorCheck(err)
 			filename := fmt.Sprintf("%v-%v.thor-image.png", *outFile, sample)
-			misc.ErrorCheck(img.Save(filename))
+			misc.ErrorCheck(img.Save(filename, *padding))
 		}
 	}
 

@@ -61,7 +61,7 @@ func TestSavePNG(t *testing.T) {
 	for _, otuVector := range otus {
 		_ = testImg.DrawOTU(otuVector)
 	}
-	if err := testImg.Save("./test.png"); err != nil {
+	if err := testImg.Save("./test.png", false); err != nil {
 		t.Fatal(err)
 	}
 	if err := os.Remove("./test.png"); err != nil {

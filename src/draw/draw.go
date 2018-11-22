@@ -43,15 +43,21 @@ func (thorPNG *thorPNG) DrawOTU(colours []color.RGBA) error {
 }
 
 // Save method will check and save the thorPNG to disk
-func (thorPNG *thorPNG) Save(filepath string) error {
-	// check the PNG has been built from enough OTUs
+func (thorPNG *thorPNG) Save(filepath string, padding bool) error {
+	// check the PNG has been built from enough OTUs for current canvas size
 	if thorPNG.xy != thorPNG.currentY {
-		// add padding to the PNG
-		for thorPNG.currentY < thorPNG.xy {
-			for x := 0; x < thorPNG.xy; x++ {
-				thorPNG.canvas.Set(x, thorPNG.currentY, PAD_COLOUR)
+		// add padding to the end of the PNG if requested
+		if padding {
+			for thorPNG.currentY < thorPNG.xy {
+				for x := 0; x < thorPNG.xy; x++ {
+					thorPNG.canvas.Set(x, thorPNG.currentY, PAD_COLOUR)
+				}
+				thorPNG.currentY++
 			}
-			thorPNG.currentY++
+		} else {
+			// TODO: if no padding requested, remove the empty rows from the canvas
+
+
 		}
 	}
 	fh, err := os.Create(filepath)

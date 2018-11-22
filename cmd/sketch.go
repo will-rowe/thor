@@ -57,7 +57,7 @@ func init() {
 	epsilon = sketchCmd.Flags().Float64P("epsilon", "e", 0.00001, "epsilon value for countminsketch generation")
 	delta = sketchCmd.Flags().Float64P("delta", "d", 0.90, "delta value for countminsketch generation")
 	minCount = sketchCmd.Flags().IntP("minCount", "m", 1, "minimum k-mer count for it to be histosketched for a given interval")
-	sketchSize = sketchCmd.Flags().UintP("sketchSize", "s", 100, "size of sketch")
+	sketchSize = sketchCmd.Flags().UintP("sketchSize", "s", 200, "size of sketch")
 	sketchCmd.Flags().SortFlags = false
 	RootCmd.AddCommand(sketchCmd)
 }

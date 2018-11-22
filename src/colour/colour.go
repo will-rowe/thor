@@ -11,9 +11,6 @@ import (
 	"gopkg.in/vmihailenco/msgpack.v2"
 )
 
-// set the colour of the padding lines
-var PAD_LINE = color.RGBA{255, 255, 255, 255}
-
 // colourSketchStore is a struct to hold and query a set of coloured sketches
 type ColourSketchStore map[string]*colourSketch
 
@@ -155,15 +152,6 @@ func NewColourSketchChan() colourSketchChan {
 	return make(colourSketchChan)
 }
 
-// getPadding is a function to get a padding line of length n
-func GetPadding(n int) []color.RGBA {
-	pad := make([]color.RGBA, n)
-	for i := 0; i < n; i++ {
-		pad[i] = PAD_LINE
-	}
-	return pad
-}
-
 // getRGBA is a helper function to convert a uint32 to an RGBA colour
 // begin loading the RGBA from the most significant bit
 func getRGBA(element uint32) rgba {
@@ -171,8 +159,8 @@ func getRGBA(element uint32) rgba {
 		R: uint8(0xFF & element),
 		G: uint8(0xFF & (element >> 8)),
 		B: uint8(0xFF & (element >> 16)),
-		A: uint8(0xFF & (element >> 24)),
-		//A: uint8(255),
+		//A: uint8(0xFF & (element >> 24)),
+		A: uint8(255),
 	}
 	rgba := rgba{
 		RGBA: colour,

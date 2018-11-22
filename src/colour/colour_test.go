@@ -17,7 +17,7 @@ func TestColourSketch(t *testing.T) {
 		t.Log(i, colour)
 	}
 	// the 6th colour in the sketch should be set to 0s (black)
-	if cs.Colours[5].printRGBA() != "rgba(0,0,0,0)" {
+	if cs.Colours[5].printRGBA() != "rgba(0,0,0,255)" {
 		t.Fatal("failed to colorsketch")
 	}
 	// the 7th colour in the sketch sketch should be set to 255s (white)

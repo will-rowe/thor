@@ -18,6 +18,8 @@ import (
 	"github.com/will-rowe/thor/src/colour"
 )
 
+const PAD_LINE = "thorPaddingLine"
+
 // otu
 type otu struct {
 	otu       string
@@ -89,21 +91,25 @@ func (otuTable *otuTable) KeepTopN(n int) error {
 
 // ColourTopN returns the corresponding coloursketches for the TopN otus
 // returns the sample ID, the slice of coloursketches and any error
-func (otuTable *otuTable) ColourTopN() ([][][]color.RGBA, error) {
+func (otuTable *otuTable) ColourTopN(colourStore colour.ColourSketchStore, pad bool) ([][][]color.RGBA, error) {
+	// attach the colour store
+	otuTable.ColourSketchStore = colourStore
+	// make the image template
 	rgbaLines := make([][][]color.RGBA, otuTable.GetNumSamples())
 	// perform for each sample in the OTU table
 	for i := range otuTable.sampleNames {
 		rgbaLines[i] = make([][]color.RGBA, len(otuTable.topN[i]))
 		// for each sample, range over the topN otus
 		for j, otu := range otuTable.topN[i] {
-			// skip padding lines
-			if otu.otu == "padding" {
+			// if OTU is has 0 abundance, add row of padding pixels if requested, else skip this OTU
+			if otu.otu == PAD_LINE && !pad {
 				continue
 			}
 			// lookup the otu in the css
 			if _, ok := otuTable.ColourSketchStore[otu.otu]; !ok {
-				// TODO: we've already checked that the topN OTUs are present in the REFSEQ db, this error should never happen here
-				return nil, fmt.Errorf("sample %v: the genus name `%v` (abundance: %d) could not be found in the coloursketches", string(otuTable.sampleNames[i]), otu.otu, otu.abundance)
+				// TODO: if the topN OTUs are not present in the REFSEQ db, this error will be raised - need to work on handling this event
+				continue
+				//return nil, fmt.Errorf("sample %v: the genus name `%v` (abundance: %d) could not be found in the coloursketches", string(otuTable.sampleNames[i]), otu.otu, otu.abundance)
 			} else {
 				if rgba, err := otuTable.ColourSketchStore[otu.otu].PrintPNGline(); err != nil {
 					return nil, err
@@ -220,11 +226,6 @@ func sortOTUs(otuTable *otuTable, sampleID, n int, wg *sync.WaitGroup) {
 	var topNotus []otu
 	// put the otus into a slice
 	for k, v := range otuTable.sampleData[sampleID] {
-		// don't include OTUs that aren't in the REFSEQ database
-		// TODO: this is a bit cludgy, I'll make it better...
-		//if _, ok := otuTable.ColourSketchStore[k]; !ok {
-		//	continue
-		//}
 		topNotus = append(topNotus, otu{k, v})
 	}
 	// sort
@@ -238,7 +239,7 @@ func sortOTUs(otuTable *otuTable, sampleID, n int, wg *sync.WaitGroup) {
 	// update any 0 abundance included in the topN to be marked as padding
 	for i := 0; i < n; i++ {
 		if otuTable.topN[sampleID][i].abundance == 0 {
-			otuTable.topN[sampleID][i].otu = "padding"
+			otuTable.topN[sampleID][i].otu = PAD_LINE
 		}
 	}
 	return

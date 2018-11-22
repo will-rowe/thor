@@ -15,6 +15,7 @@ import (
 	"github.com/will-rowe/hulk/src/histosketch"
 	"github.com/will-rowe/hulk/src/misc"
 	"github.com/will-rowe/thor/src/colour"
+	"github.com/will-rowe/thor/src/hammer"
 )
 
 // the command line arguments
@@ -139,6 +140,9 @@ func makeColourSketches() error {
 			}
 		}
 	}
+	// add a padding line (slice of 0s) to the store
+	padLine := make([]uint32, css.GetSketchLength())
+	css[hammer.PAD_LINE] = colour.NewColourSketch(padLine, hammer.PAD_LINE)
 	// encode and write the colour sketch map to disk
 	return css.Dump(*outFile + "-coloursketches.thor")
 }
