@@ -159,8 +159,7 @@ func getRGBA(element uint32) rgba {
 		R: uint8(0xFF & element),
 		G: uint8(0xFF & (element >> 8)),
 		B: uint8(0xFF & (element >> 16)),
-		//A: uint8(0xFF & (element >> 24)),
-		A: uint8(255),
+		A: uint8(0xFF & (element >> 24)),
 	}
 	rgba := rgba{
 		RGBA: colour,

@@ -48,7 +48,7 @@ to quickly create a Cobra application.`,
 
 // a function to initialise the command line arguments
 func init() {
-	sketchDir = colourCmd.Flags().StringP("sketchDir", "d", "./", "the directory containing the sketches to smash (compare)...")
+	sketchDir = colourCmd.Flags().StringP("sketchDir", "d", "./", "the directory containing the sketches to colour")
 	recursive = colourCmd.Flags().Bool("recursive", false, "recursively search the supplied sketch directory (-d)")
 	storeCSV = colourCmd.Flags().Bool("storeCSV", false, "also write the colour sketches (as hex) to a plain text csv file")
 	colourCmd.Flags().SortFlags = false
@@ -86,23 +86,27 @@ func makeColourSketches() error {
 		// get the sketch values and launch go routines
 		go func(sketch []uint, id string) {
 			defer wg.Done()
-			// convert sketch values to uint32, send error if they overflow
+			// collect the sketch values so that they can be encoded as R and G values (uint16)
+			// the colour library uses []uint32 as input (encodes as RGBA), but we just want to use the R and G slots
 			values := make([]uint32, len(sketch))
-			var err bool
+			// if sketch values overflow uint16, get THOR to use modulo and raise a warning
+			var overflow error
 			for i := 0; i < len(sketch); i++ {
-				if sketch[i] > math.MaxUint32 {
-					err = true
+				if sketch[i] > math.MaxUint16 {
+					overflow = fmt.Errorf("sketch values overflow uint16, using modulo to scale the values to fit")
 					break
 				}
 				values[i] = uint32(sketch[i])
 			}
-			// if the sketch fits, colour and send it
-			if !err {
-				csc.Send(colour.NewColourSketch(values, id), nil)
-			} else {
-				csc.Send(nil, fmt.Errorf("sketch contains element that overflows uint32: %v", id))
+			// if a sketch value overflowed uint16, rerun the loop and modulo the values across uint16
+			if overflow != nil {
+				values = make([]uint32, len(sketch))
+				for i := 0; i < len(sketch); i++ {
+					values[i] = uint32(sketch[i] % 65535)
+				}
 			}
-
+			// colour and send the sketch
+			csc.Send(colour.NewColourSketch(values, id), overflow)
 		}(hSketches[id].Sketch, id)
 	}
 	go func() {
@@ -111,10 +115,13 @@ func makeColourSketches() error {
 	}()
 
 	// collect the coloursketches
+	var scaled error
 	for parcel := range csc {
-		// check for errors
+		// check if sketch values were scaled
 		coloursketch, err := parcel.Unpack()
-		misc.ErrorCheck(err)
+		if err != nil {
+			scaled = err
+		}
 		// clean up the id so that only the genus remains
 		tmp1 := strings.TrimSuffix(coloursketch.Id, ".sketch")
 		tmp2 := strings.Split(tmp1, "/")
@@ -139,6 +146,10 @@ func makeColourSketches() error {
 				return err
 			}
 		}
+	}
+	// print to screen if sketch values were scaled to fit uint16
+	if scaled != nil {
+		fmt.Println(scaled)
 	}
 	// add a padding line (slice of 0s) to the store
 	padLine := make([]uint32, css.GetSketchLength())
