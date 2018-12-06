@@ -106,12 +106,32 @@ func (otuTable *otuTable) ColourTopN(colourStore colour.ColourSketchStore, pad b
 				continue
 			}
 			// lookup the otu in the css
-			if _, ok := otuTable.ColourSketchStore[otu.otu]; !ok {
+			if cs, ok := otuTable.ColourSketchStore[otu.otu]; !ok {
 				// TODO: if the topN OTUs are not present in the REFSEQ db, this error will be raised - need to work on handling this event
 				continue
 				//return nil, fmt.Errorf("sample %v: the genus name `%v` (abundance: %d) could not be found in the coloursketches", string(otuTable.sampleNames[i]), otu.otu, otu.abundance)
 			} else {
-				if rgba, err := otuTable.ColourSketchStore[otu.otu].PrintPNGline(); err != nil {
+				// make a copy of the colour sketch
+				csCopy := cs.CopySketch()
+				// adjust the colour sketch so that the B slot corresponds to the OTU abundance
+				// first scale the abundance value to fit the uint8 slot
+				// TODO: set a customisable cap for abundance values
+				abunCap := 5000
+				var abunVal float32
+				if otu.abundance > abunCap {
+					abunVal = 255
+				} else {
+					abunVal = (float32(otu.abundance) / float32(abunCap)) * 255
+				}
+				// adjust the B slot
+				if err := csCopy.Adjust('B', uint8(abunVal)); err != nil {
+					return nil, err
+				}
+				// adjust the A slot so that it is set to visible
+				if err := csCopy.Adjust('A', 255); err != nil {
+					return nil, err
+				}
+				if rgba, err := csCopy.PrintPNGline(); err != nil {
 					return nil, err
 				} else {
 					rgbaLines[i][j] = rgba

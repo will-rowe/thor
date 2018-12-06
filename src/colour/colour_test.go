@@ -7,8 +7,8 @@ import (
 )
 
 var (
-	sketch = []uint32{12345, 23456, 34567, 45678, 567895678, 0, math.MaxUint32}
-	hex0   = "#00003039"
+	sketch  = []uint32{12345, 23456, 34567, 45678, 567895678, 0, math.MaxUint32}
+	hex0    = "#00003039"
 	sketch2 = []uint32{12345}
 )
 

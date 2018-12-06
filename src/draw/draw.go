@@ -57,7 +57,6 @@ func (thorPNG *thorPNG) Save(filepath string, padding bool) error {
 		} else {
 			// TODO: if no padding requested, remove the empty rows from the canvas
 
-
 		}
 	}
 	fh, err := os.Create(filepath)

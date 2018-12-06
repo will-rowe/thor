@@ -31,7 +31,7 @@ var hSketches map[string]*histosketch.SketchStore
 // colourCmd represents the colour command
 var colourCmd = &cobra.Command{
 	Use:   "colour",
-	Short: "Colour a reference set of sketches",
+	Short: "Colour a reference set of histosketches using only R and G channels of RGBA",
 	Long: `A longer description that spans multiple lines and likely contains examples
 and usage of using your command. For example:
 

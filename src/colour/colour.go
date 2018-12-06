@@ -7,7 +7,7 @@ import (
 	"image/color"
 	"io/ioutil"
 	"math"
-	
+
 	"gopkg.in/vmihailenco/msgpack.v2"
 )
 
@@ -49,6 +49,18 @@ func (ColourSketchStore *ColourSketchStore) GetSketchLength() int {
 type colourSketch struct {
 	Colours []rgba
 	Id      string
+}
+
+// CopySketch returns a copy of the colourSketch
+func (cs *colourSketch) CopySketch() *colourSketch {
+	c := make([]rgba, len(cs.Colours))
+	for i := 0; i < len(c); i++ {
+		c[i] = cs.Colours[i]
+	}
+	return &colourSketch{
+		Colours: c,
+		Id:      cs.Id,
+	}
 }
 
 // PrintCSVline is a method to print the coloured sketch as a csv line (either in rgb or hex)
@@ -97,7 +109,7 @@ func (colourSketch *colourSketch) Adjust(slot rune, increment uint8) error {
 			if overflowCheck > math.MaxUint8 {
 				return fmt.Errorf("overflow error: can't increment curent value (%d) by %d", colourSketch.Colours[i].RGBA.R, increment)
 			}
-			colourSketch.Colours[i].RGBA.R += increment 
+			colourSketch.Colours[i].RGBA.R += increment
 		}
 	case 'G':
 		for i := range colourSketch.Colours {
@@ -105,7 +117,7 @@ func (colourSketch *colourSketch) Adjust(slot rune, increment uint8) error {
 			if overflowCheck > math.MaxUint8 {
 				return fmt.Errorf("overflow error: can't increment curent value (%d) by %d", colourSketch.Colours[i].RGBA.G, increment)
 			}
-			colourSketch.Colours[i].RGBA.G += increment 
+			colourSketch.Colours[i].RGBA.G += increment
 		}
 	case 'B':
 		for i := range colourSketch.Colours {
@@ -113,7 +125,7 @@ func (colourSketch *colourSketch) Adjust(slot rune, increment uint8) error {
 			if overflowCheck > math.MaxUint8 {
 				return fmt.Errorf("overflow error: can't increment curent value (%d) by %d", colourSketch.Colours[i].RGBA.B, increment)
 			}
-			colourSketch.Colours[i].RGBA.B += increment 
+			colourSketch.Colours[i].RGBA.B += increment
 		}
 	case 'A':
 		for i := range colourSketch.Colours {
@@ -121,7 +133,7 @@ func (colourSketch *colourSketch) Adjust(slot rune, increment uint8) error {
 			if overflowCheck > math.MaxUint8 {
 				return fmt.Errorf("overflow error: can't increment curent value (%d) by %d", colourSketch.Colours[i].RGBA.A, increment)
 			}
-			colourSketch.Colours[i].RGBA.A += increment 
+			colourSketch.Colours[i].RGBA.A += increment
 		}
 	default:
 		return fmt.Errorf("unknown slot (%v): only R/G/B/A supported", slot)

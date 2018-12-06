@@ -50,9 +50,9 @@ to quickly create a Cobra application.`,
 // a function to initialise the command line arguments
 func init() {
 	otuTables = hammerCmd.Flags().StringSliceP("otuTables", "i", []string{}, "input OTU table(s) to transform to hashed OTU RGBA images")
-	format = hammerCmd.Flags().StringP("otuFormat", "f", "qiime", "the format of the input OTU table(s) (only QIIME currently supported")
+	format = hammerCmd.Flags().StringP("otuFormat", "f", "qiime", "the format of the input OTU table(s) (only QIIME currently supported)")
 	colourSketches = hammerCmd.Flags().StringP("colourSketches", "c", "", "the set of reference colour sketches (from `thor colour`)")
-	alphaAbundance = hammerCmd.Flags().Bool("alphaAbundance", false, "include the OTU abundance (replaces existing alpha value of colour sketches")
+	alphaAbundance = hammerCmd.Flags().Bool("alphaAbundance", false, "include the OTU abundance (replaces existing alpha value of colour sketches) --NOT SUPPORTED YET!")
 	padding = hammerCmd.Flags().Bool("padding", false, "pad out images with rows of white pixels if OTUs are absent")
 	hammerCmd.MarkFlagRequired("otuTables")
 	hammerCmd.MarkFlagRequired("colourSketches")
@@ -150,6 +150,7 @@ func runHammer() {
 		// process each sample, collecting the pixel vectors
 		for j, sampleRGBA := range sampleRGBAs {
 			// create the canvas
+			// TODO: this is created as a square for now
 			img, err := draw.NewThorPNG(sketchLength, sketchLength)
 			misc.ErrorCheck(err)
 			// collect the pixel vectors
