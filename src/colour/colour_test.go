@@ -9,6 +9,7 @@ import (
 var (
 	sketch = []uint32{12345, 23456, 34567, 45678, 567895678, 0, math.MaxUint32}
 	hex0   = "#00003039"
+	sketch2 = []uint32{12345}
 )
 
 func TestColourSketch(t *testing.T) {
@@ -24,6 +25,31 @@ func TestColourSketch(t *testing.T) {
 	if cs.Colours[6].printRGBA() != "rgba(255,255,255,255)" {
 		t.Fatal("failed to colorsketch")
 	}
+}
+
+func TestColourSketchAdjust(t *testing.T) {
+	cs := NewColourSketch(sketch2, "coloursketchA")
+	if err := cs.Adjust('Q', 100); err == nil {
+		t.Fatal("only R/G/B/A should be supported")
+	}
+	if err := cs.Adjust('R', math.MaxUint8); err == nil {
+		t.Fatal("should throw a detailed error when attempting to overflow a RGBA slot")
+	}
+	if err := cs.Adjust('R', 1); err != nil {
+		t.Log(err)
+		t.Fatal("should be able to increment R slots by 1")
+	}
+	_ = cs.Adjust('G', 1)
+	_ = cs.Adjust('B', 1)
+	_ = cs.Adjust('A', 1)
+	rgbLine, err := cs.PrintCSVline(false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if rgbLine != "rgba(58,49,1,1)," {
+		t.Fatal("adjust method did not increment each RGBA slot by 1")
+	}
+	t.Log(rgbLine)
 }
 
 func TestPrint(t *testing.T) {

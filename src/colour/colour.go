@@ -3,11 +3,11 @@
 package colour
 
 import (
-	"errors"
 	"fmt"
 	"image/color"
 	"io/ioutil"
-
+	"math"
+	
 	"gopkg.in/vmihailenco/msgpack.v2"
 )
 
@@ -54,7 +54,7 @@ type colourSketch struct {
 // PrintCSVline is a method to print the coloured sketch as a csv line (either in rgb or hex)
 func (colourSketch *colourSketch) PrintCSVline(printHex bool) (string, error) {
 	if colourSketch.Id == "" {
-		return "", errors.New("no ID is set for this colour sketch")
+		return "", fmt.Errorf("no ID is set for this colour sketch")
 	}
 	var line string
 	for _, value := range colourSketch.Colours {
@@ -74,7 +74,7 @@ func (colourSketch *colourSketch) PrintCSVline(printHex bool) (string, error) {
 // PrintPNGline is a method to print the coloured sketch as a line for PNG conversion
 func (colourSketch *colourSketch) PrintPNGline() ([]color.RGBA, error) {
 	if colourSketch.Id == "" {
-		return nil, errors.New("no ID is set for this colour sketch")
+		return nil, fmt.Errorf("no ID is set for this colour sketch")
 	}
 	line := make([]color.RGBA, len(colourSketch.Colours))
 	for i, colour := range colourSketch.Colours {
@@ -85,6 +85,48 @@ func (colourSketch *colourSketch) PrintPNGline() ([]color.RGBA, error) {
 		line[i] = colour.RGBA
 	}
 	return line, nil
+}
+
+// Adjust is a method to increment a RGBA slot in each element of a colourSketch
+func (colourSketch *colourSketch) Adjust(slot rune, increment uint8) error {
+	var overflowCheck uint16
+	switch slot {
+	case 'R':
+		for i := range colourSketch.Colours {
+			overflowCheck = uint16(colourSketch.Colours[i].RGBA.R) + uint16(increment)
+			if overflowCheck > math.MaxUint8 {
+				return fmt.Errorf("overflow error: can't increment curent value (%d) by %d", colourSketch.Colours[i].RGBA.R, increment)
+			}
+			colourSketch.Colours[i].RGBA.R += increment 
+		}
+	case 'G':
+		for i := range colourSketch.Colours {
+			overflowCheck = uint16(colourSketch.Colours[i].RGBA.G) + uint16(increment)
+			if overflowCheck > math.MaxUint8 {
+				return fmt.Errorf("overflow error: can't increment curent value (%d) by %d", colourSketch.Colours[i].RGBA.G, increment)
+			}
+			colourSketch.Colours[i].RGBA.G += increment 
+		}
+	case 'B':
+		for i := range colourSketch.Colours {
+			overflowCheck = uint16(colourSketch.Colours[i].RGBA.B) + uint16(increment)
+			if overflowCheck > math.MaxUint8 {
+				return fmt.Errorf("overflow error: can't increment curent value (%d) by %d", colourSketch.Colours[i].RGBA.B, increment)
+			}
+			colourSketch.Colours[i].RGBA.B += increment 
+		}
+	case 'A':
+		for i := range colourSketch.Colours {
+			overflowCheck = uint16(colourSketch.Colours[i].RGBA.A) + uint16(increment)
+			if overflowCheck > math.MaxUint8 {
+				return fmt.Errorf("overflow error: can't increment curent value (%d) by %d", colourSketch.Colours[i].RGBA.A, increment)
+			}
+			colourSketch.Colours[i].RGBA.A += increment 
+		}
+	default:
+		return fmt.Errorf("unknown slot (%v): only R/G/B/A supported", slot)
+	}
+	return nil
 }
 
 // parcel helps to parcel colour sketches and error messages for sending over a channel
@@ -118,7 +160,7 @@ type rgba struct {
 // checker is a method to check the rgb can be used
 func (rgba *rgba) checker() error {
 	if rgba.Hex == "" {
-		return errors.New("this is an uninitialised rgba")
+		return fmt.Errorf("this is an uninitialised rgba")
 	}
 	return nil
 }
