@@ -25,6 +25,10 @@ So far, it will:
 It's a work in progress, but we've had some success in using these images in Neural Nets to classify the Human Microbiome Project 16S samples by body site.
 
 
+## ToDo
+
+When an OTU is not present in the refseq collection, it is ignored by THOR. This needs to be handled properly.
+
 
 
 
